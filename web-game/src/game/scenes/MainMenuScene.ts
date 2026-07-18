@@ -8,6 +8,7 @@ import {
 } from '../data/session';
 import type { FactionId } from '../data/tanks';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config';
+import { applyShellLayout, requestGameFullscreen } from '../layout';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 export class MainMenuScene extends Phaser.Scene {
@@ -23,6 +24,8 @@ export class MainMenuScene extends Phaser.Scene {
   create() {
     const prev = this.registry.get('session') as SessionConfig | undefined;
     if (prev) this.session = { ...prev };
+    applyShellLayout(this.session.platform === 'mobile');
+    this.scale.refresh();
 
     this.dialog = new ConfirmDialog(this);
 
@@ -155,7 +158,11 @@ export class MainMenuScene extends Phaser.Scene {
       t.setData('kind', o.kind);
 
       t.on('pointerdown', () => {
-        if (o.kind === 'platform') this.session.platform = o.value as PlatformMode;
+        if (o.kind === 'platform') {
+          this.session.platform = o.value as PlatformMode;
+          applyShellLayout(this.session.platform === 'mobile');
+          this.scale.refresh();
+        }
         if (o.kind === 'faction') this.session.faction = o.value as FactionId;
         if (o.kind === 'battle') this.session.battle = o.value as BattleId;
         this.refreshSummary();
@@ -192,6 +199,14 @@ export class MainMenuScene extends Phaser.Scene {
   private startGame() {
     this.registry.set('session', { ...this.session });
     this.sound.play('sfx-select', { volume: 0.35 });
+    applyShellLayout(this.session.platform === 'mobile');
+    if (this.session.platform === 'mobile') {
+      void requestGameFullscreen().finally(() => {
+        this.scale.refresh();
+        this.scene.start('Battle');
+      });
+      return;
+    }
     this.scene.start('Battle');
   }
 }

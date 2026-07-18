@@ -23,6 +23,7 @@ import {
 import { DEFAULT_SESSION, type SessionConfig } from '../data/session';
 import { GAME_HEIGHT, GAME_WIDTH, WORLD_HEIGHT, WORLD_WIDTH } from '../config';
 import { createBattlefield } from '../world/Terrain';
+import { applyShellLayout } from '../layout';
 
 type Controllable = Tank | Aircraft;
 
@@ -81,6 +82,8 @@ export class BattleScene extends Phaser.Scene {
     this.session = { ...(this.registry.get('session') as SessionConfig | undefined ?? DEFAULT_SESSION) };
     const assault = this.session.battle === 'assault';
     const axis = this.session.faction === 'axis';
+    applyShellLayout(this.session.platform === 'mobile');
+    this.scale.refresh();
 
     this.ensureWhiteTexture();
     createBattlefield(this);
@@ -124,8 +127,8 @@ export class BattleScene extends Phaser.Scene {
       team: 'enemy',
       x: 1780,
       y: 340,
-      textureOverride: 'bld-rw-hq',
-      scaleOverride: 1.2,
+      textureOverride: 'bld-base-enemy',
+      scaleOverride: 0.95,
     });
     this.enemyAirbase = new Building(this, {
       kind: 'airbase',
@@ -764,16 +767,16 @@ export class BattleScene extends Phaser.Scene {
   private askLeave() {
     if (this.confirm.isOpen) return;
     this.confirm.show('Menyuga qaytasizmi?\nJang holati saqlanmaydi.', () => {
-      this.mobile?.destroy();
       this.scene.start('MainMenu');
     });
   }
 
   update(_time: number, delta: number) {
     if (this.confirm.isOpen) {
-      if (Phaser.Input.Keyboard.JustDown(this.escKey) || this.mobile?.consumeMenu()) {
-        this.confirm.hide();
-      }
+      // ESC / ☰ while dialog open = cancel only (not Ha)
+      if (Phaser.Input.Keyboard.JustDown(this.escKey)) this.confirm.hide();
+      // Drain menu latch so it cannot re-trigger
+      this.mobile?.consumeMenu();
       return;
     }
 

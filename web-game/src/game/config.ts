@@ -4,7 +4,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { BattleScene } from './scenes/BattleScene';
 
-/** Viewport size (camera). */
+/** Logical game resolution (camera). */
 export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 
@@ -19,7 +19,6 @@ export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     backgroundColor: '#0a100e',
-    // Crisp sprites (nearest filter set per-texture in Preload)
     pixelArt: false,
     antialias: true,
     roundPixels: true,
@@ -42,6 +41,8 @@ export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
+      expandParent: false,
+      fullscreenTarget: parent,
     },
   };
 }

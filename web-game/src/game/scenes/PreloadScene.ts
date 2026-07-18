@@ -28,15 +28,17 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('map', assetUrl('assets/maps/battlefield.png'));
     this.load.image('loading-art', assetUrl('assets/maps/battlefield.png'));
 
-    this.load.image('bld-dv-hq', assetUrl('assets/buildings/dv_hq_lg.png'));
-    this.load.image('bld-dv-town', assetUrl('assets/buildings/dv_town_lg.png'));
-    this.load.image('bld-rw-hq', assetUrl('assets/buildings/rw_hq_lg.png'));
-    this.load.image('bld-rw-tank-factory', assetUrl('assets/buildings/rw_tank_factory_lg.png'));
-    this.load.image('bld-rw-exp-factory', assetUrl('assets/buildings/rw_exp_factory_lg.png'));
-    this.load.image('bld-rw-mech-factory', assetUrl('assets/buildings/rw_mech_factory_lg.png'));
+    // Eski baza / kazarma / zavod
+    this.load.image('bld-hq-player', assetUrl('assets/buildings/hq_player.png'));
+    this.load.image('bld-factory-player', assetUrl('assets/buildings/factory_player.png'));
+    this.load.image('bld-factory-pad', assetUrl('assets/buildings/factory_pad.png'));
+    this.load.image('bld-barracks-player', assetUrl('assets/buildings/barracks_player.png'));
+    this.load.image('bld-barracks-pad', assetUrl('assets/buildings/barracks_pad.png'));
+    this.load.image('bld-factory-enemy', assetUrl('assets/buildings/factory_enemy.png'));
+    this.load.image('bld-base-enemy', assetUrl('assets/buildings/base_enemy.png'));
+    // Faqat aerodrom / vertolyot — yangi RW pad
     this.load.image('bld-rw-air-pad', assetUrl('assets/buildings/rw_air_pad_lg.png'));
     this.load.image('bld-rw-heli-pad', assetUrl('assets/buildings/rw_heli_pad_lg.png'));
-    this.load.image('bld-rw-repair', assetUrl('assets/buildings/rw_repair_bay_lg.png'));
 
     this.load.image('ui-joy-base', assetUrl('assets/ui/joy_base.png'));
     this.load.image('ui-joy-knob', assetUrl('assets/ui/joy_knob.png'));
@@ -64,8 +66,7 @@ export class PreloadScene extends Phaser.Scene {
   create() {
     for (const key of this.textures.getTextureKeys()) {
       if (key === '__DEFAULT' || key === '__MISSING') continue;
-      const nearest =
-        key.startsWith('bld-rw') || key.startsWith('bld-dv') || key.startsWith('ui-joy');
+      const nearest = key.startsWith('bld-rw') || key.startsWith('ui-joy');
       this.textures
         .get(key)
         .setFilter(
