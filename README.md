@@ -46,3 +46,26 @@ cd web-game
 npm run build
 npm run preview
 ```
+
+## Netlify
+
+Repo ildizida `netlify.toml` bor:
+
+| Sozlama | Qiymat |
+|---------|--------|
+| Base directory | `web-game` |
+| Build command | `npm run build` |
+| Publish | `dist` |
+| Node | 20 |
+
+**Deploy:** Netlify → Add new site → Import from Git → shu repo.
+
+Lokal tekshiruv:
+
+```bash
+cd web-game
+npm run build
+npm run preview
+```
+
+Keyin http://localhost:4173 oching — Netlifydagi kabi production build.

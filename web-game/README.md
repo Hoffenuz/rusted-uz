@@ -32,3 +32,8 @@ Brauzerda Vite ko‘rsatgan URL (odatda http://localhost:5173).
 - `src/game/entities` — Tank, Aircraft, Building, Projectile
 - `src/game/ui` — BuildMenu, MobileControls, ConfirmDialog
 - `public/assets` — tanks, aircraft, buildings, maps, ui, audio
+
+## Netlify
+
+Repo ildizidagi `netlify.toml` avtomatik sozlaydi (`base=web-game`, `publish=dist`).  
+Lokal: `npm run build && npm run preview`

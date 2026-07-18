@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { assetKeys, TANK_DEFS, type TankId } from '../data/tanks';
 import { AIRCRAFT_DEFS, aircraftAssetKey, type AircraftId } from '../data/aircraft';
+import { assetUrl } from '../assetUrl';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -24,49 +25,45 @@ export class PreloadScene extends Phaser.Scene {
       label.setText(`Yuklanmoqda… ${Math.round(value * 100)}%`);
     });
 
-    this.load.image('map', '/assets/maps/battlefield.png');
-    // Optional menu backdrop (same map if loading.jpg absent)
-    this.load.image('loading-art', '/assets/maps/battlefield.png');
+    this.load.image('map', assetUrl('assets/maps/battlefield.png'));
+    this.load.image('loading-art', assetUrl('assets/maps/battlefield.png'));
 
-    // Deux Vies HQ / town
-    this.load.image('bld-dv-hq', '/assets/buildings/dv_hq_lg.png');
-    this.load.image('bld-dv-town', '/assets/buildings/dv_town_lg.png');
-    // Rusted Warfare vanilla buildings (cropped first frames, nearest-upscaled)
-    this.load.image('bld-rw-hq', '/assets/buildings/rw_hq_lg.png');
-    this.load.image('bld-rw-tank-factory', '/assets/buildings/rw_tank_factory_lg.png');
-    this.load.image('bld-rw-exp-factory', '/assets/buildings/rw_exp_factory_lg.png');
-    this.load.image('bld-rw-mech-factory', '/assets/buildings/rw_mech_factory_lg.png');
-    this.load.image('bld-rw-air-pad', '/assets/buildings/rw_air_pad_lg.png');
-    this.load.image('bld-rw-heli-pad', '/assets/buildings/rw_heli_pad_lg.png');
-    this.load.image('bld-rw-repair', '/assets/buildings/rw_repair_bay_lg.png');
-    // Mobile joystick pack
-    this.load.image('ui-joy-base', '/assets/ui/joy_base.png');
-    this.load.image('ui-joy-knob', '/assets/ui/joy_knob.png');
-    this.load.image('ui-joy-knob-small', '/assets/ui/joy_knob_small.png');
+    this.load.image('bld-dv-hq', assetUrl('assets/buildings/dv_hq_lg.png'));
+    this.load.image('bld-dv-town', assetUrl('assets/buildings/dv_town_lg.png'));
+    this.load.image('bld-rw-hq', assetUrl('assets/buildings/rw_hq_lg.png'));
+    this.load.image('bld-rw-tank-factory', assetUrl('assets/buildings/rw_tank_factory_lg.png'));
+    this.load.image('bld-rw-exp-factory', assetUrl('assets/buildings/rw_exp_factory_lg.png'));
+    this.load.image('bld-rw-mech-factory', assetUrl('assets/buildings/rw_mech_factory_lg.png'));
+    this.load.image('bld-rw-air-pad', assetUrl('assets/buildings/rw_air_pad_lg.png'));
+    this.load.image('bld-rw-heli-pad', assetUrl('assets/buildings/rw_heli_pad_lg.png'));
+    this.load.image('bld-rw-repair', assetUrl('assets/buildings/rw_repair_bay_lg.png'));
+
+    this.load.image('ui-joy-base', assetUrl('assets/ui/joy_base.png'));
+    this.load.image('ui-joy-knob', assetUrl('assets/ui/joy_knob.png'));
+    this.load.image('ui-joy-knob-small', assetUrl('assets/ui/joy_knob_small.png'));
 
     (Object.keys(TANK_DEFS) as TankId[]).forEach((id) => {
       const keys = assetKeys(id);
-      this.load.image(keys.body, `/assets/tanks/${id}/body.png`);
-      this.load.image(keys.turret, `/assets/tanks/${id}/turret.png`);
-      this.load.image(keys.barrel, `/assets/tanks/${id}/barrel.png`);
-      this.load.image(keys.wreck, `/assets/tanks/${id}/wreck.png`);
+      this.load.image(keys.body, assetUrl(`assets/tanks/${id}/body.png`));
+      this.load.image(keys.turret, assetUrl(`assets/tanks/${id}/turret.png`));
+      this.load.image(keys.barrel, assetUrl(`assets/tanks/${id}/barrel.png`));
+      this.load.image(keys.wreck, assetUrl(`assets/tanks/${id}/wreck.png`));
     });
 
     (Object.keys(AIRCRAFT_DEFS) as AircraftId[]).forEach((id) => {
-      this.load.image(aircraftAssetKey(id), `/assets/aircraft/${id}.png`);
+      this.load.image(aircraftAssetKey(id), assetUrl(`assets/aircraft/${id}.png`));
     });
 
-    this.load.audio('sfx-cannon', '/assets/audio/cannon.ogg');
-    this.load.audio('sfx-explode', '/assets/audio/explode.wav');
-    this.load.audio('sfx-ricochet', '/assets/audio/ricochet.wav');
-    this.load.audio('sfx-engine', '/assets/audio/engine.ogg');
-    this.load.audio('sfx-select', '/assets/audio/select.wav');
+    this.load.audio('sfx-cannon', assetUrl('assets/audio/cannon.ogg'));
+    this.load.audio('sfx-explode', assetUrl('assets/audio/explode.wav'));
+    this.load.audio('sfx-ricochet', assetUrl('assets/audio/ricochet.wav'));
+    this.load.audio('sfx-engine', assetUrl('assets/audio/engine.ogg'));
+    this.load.audio('sfx-select', assetUrl('assets/audio/select.wav'));
   }
 
   create() {
     for (const key of this.textures.getTextureKeys()) {
       if (key === '__DEFAULT' || key === '__MISSING') continue;
-      // Pixel RW art stays crisp
       const nearest =
         key.startsWith('bld-rw') || key.startsWith('bld-dv') || key.startsWith('ui-joy');
       this.textures
