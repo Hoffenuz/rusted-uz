@@ -16,9 +16,12 @@ export interface BuildingDef {
   produceList: UnitId[];
 }
 
+/** On-screen longest edge (px) — tanks ~118px, bases a bit larger but not huge. */
+const scaleTo = (texMax: number, target: number) => target / texMax;
+
 /**
- * Baza / kazarma / zavod — eski mod art.
- * Faqat aerodrom va vertolyot maydoni — RW pad art.
+ * Baza / kazarma / zavod — eski mod art (kichik scale).
+ * Aerodrom / vertolyot — RW pad.
  */
 export const BUILDING_DEFS: Record<BuildingKind, BuildingDef> = {
   hq: {
@@ -26,8 +29,9 @@ export const BUILDING_DEFS: Record<BuildingKind, BuildingDef> = {
     displayName: 'Qo‘mondonlik',
     maxHp: 2000,
     texture: 'bld-hq-player',
-    scale: 0.85,
-    spawnOffset: { x: 0, y: 70 },
+    // 450×450 → ~150px
+    scale: scaleTo(450, 150),
+    spawnOffset: { x: 0, y: 55 },
     canProduce: false,
     produceList: [],
   },
@@ -37,8 +41,9 @@ export const BUILDING_DEFS: Record<BuildingKind, BuildingDef> = {
     maxHp: 1400,
     texture: 'bld-factory-player',
     padTexture: 'bld-factory-pad',
-    scale: 1.15,
-    spawnOffset: { x: 70, y: 40 },
+    // 170×235 → ~140px
+    scale: scaleTo(235, 140),
+    spawnOffset: { x: 55, y: 35 },
     canProduce: true,
     produceList: ['m4', 'panther', 'tiger_b'] satisfies TankId[],
   },
@@ -48,8 +53,9 @@ export const BUILDING_DEFS: Record<BuildingKind, BuildingDef> = {
     maxHp: 900,
     texture: 'bld-barracks-player',
     padTexture: 'bld-barracks-pad',
-    scale: 1.05,
-    spawnOffset: { x: 50, y: 30 },
+    // 172×132 → ~115px
+    scale: scaleTo(172, 115),
+    spawnOffset: { x: 40, y: 25 },
     canProduce: false,
     produceList: [],
   },
@@ -58,8 +64,9 @@ export const BUILDING_DEFS: Record<BuildingKind, BuildingDef> = {
     displayName: 'Dushman zavodi',
     maxHp: 2400,
     texture: 'bld-factory-enemy',
-    scale: 1.1,
-    spawnOffset: { x: -70, y: 40 },
+    // 241×225 → ~140px
+    scale: scaleTo(241, 140),
+    spawnOffset: { x: -55, y: 35 },
     canProduce: true,
     produceList: ['t34', 'is2', 'kv1'] satisfies TankId[],
   },
@@ -68,8 +75,9 @@ export const BUILDING_DEFS: Record<BuildingKind, BuildingDef> = {
     displayName: 'Samolyot maydoni',
     maxHp: 1100,
     texture: 'bld-rw-air-pad',
-    scale: 1.05,
-    spawnOffset: { x: 80, y: 10 },
+    // 120×189 → ~130px
+    scale: scaleTo(189, 130),
+    spawnOffset: { x: 60, y: 8 },
     canProduce: true,
     produceList: ['bf109'] satisfies AircraftId[],
   },
@@ -78,8 +86,8 @@ export const BUILDING_DEFS: Record<BuildingKind, BuildingDef> = {
     displayName: 'Vertolyot maydoni',
     maxHp: 1000,
     texture: 'bld-rw-heli-pad',
-    scale: 1.05,
-    spawnOffset: { x: 70, y: 20 },
+    scale: scaleTo(189, 130),
+    spawnOffset: { x: 55, y: 15 },
     canProduce: true,
     produceList: ['hellcat'] satisfies AircraftId[],
   },

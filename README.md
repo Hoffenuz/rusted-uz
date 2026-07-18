@@ -5,6 +5,11 @@ Brauzerda ishlaydigan tank jangi demosi (**Phaser 3 + TypeScript + Vite**).
 > GitHubga faqat `web-game/` (kod + `public/assets`) yuklanadi.  
 > `.rwmod`, extract qilingan modlar, joystick pack va to‘liq Rusted Warfare o‘rnatmasi **gitignore**da — lokal manba sifatida qoladi.
 
+## O‘yin (Rusted Warfare ruhida)
+
+Kredit yig‘ish → zavod/aerodromdan birlik → dushman bazasini yo‘q qilish.  
+UI/FX: RW `res/drawable` dan (credits chip, portlash, chang, menu title).
+
 ## Tezkor start
 
 ```bash

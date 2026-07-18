@@ -9,42 +9,54 @@ export type BuildMenuSelect = (unitId: UnitId) => void;
 function labelFor(unitId: UnitId): string {
   if (isAircraftId(unitId)) {
     const d = AIRCRAFT_DEFS[unitId];
-    return `${d.displayName}  (${d.buildCost})`;
+    return `${d.displayName}  ·  $${d.buildCost}`;
   }
   const d = TANK_DEFS[unitId];
-  return `${d.displayName}  (${d.buildCost})`;
+  return `${d.displayName}  ·  $${d.buildCost}`;
 }
 
-/** Screen-space production menu opened when a factory/airbase is clicked. */
+/** Screen-space production menu — RW panel chrome. */
 export class BuildMenu {
   private readonly root: Phaser.GameObjects.Container;
   private readonly title: Phaser.GameObjects.Text;
-  private readonly buttons: Phaser.GameObjects.Text[] = [];
-  private readonly bg: Phaser.GameObjects.Rectangle;
+  private readonly buttons: Phaser.GameObjects.GameObject[] = [];
+  private readonly panel: Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
   private openBuilding: Building | null = null;
   private onSelect: BuildMenuSelect | null = null;
 
   constructor(private readonly scene: Phaser.Scene) {
-    this.bg = scene.add.rectangle(0, 0, 260, 160, 0x0c1410, 0.92).setStrokeStyle(1, 0xc4a35a, 0.8);
+    this.panel = scene.textures.exists('ui-panel-box')
+      ? scene.add.image(0, 0, 'ui-panel-box').setDisplaySize(320, 220).setAlpha(0.95)
+      : scene.add.rectangle(0, 0, 300, 200, 0x0c1410, 0.92).setStrokeStyle(1, 0xc4a35a, 0.8);
+
+    const icon = scene.textures.exists('ui-icon-build')
+      ? scene.add.image(-120, -78, 'ui-icon-build').setDisplaySize(22, 22)
+      : scene.add.circle(-120, -78, 8, 0xc4a35a);
+
     this.title = scene.add
-      .text(0, -58, 'Ishlab chiqarish', {
+      .text(-100, -78, 'Ishlab chiqarish', {
         fontFamily: 'Segoe UI',
-        fontSize: '14px',
+        fontSize: '16px',
         color: '#e8d7a8',
       })
-      .setOrigin(0.5);
+      .setOrigin(0, 0.5);
 
     const close = scene.add
-      .text(110, -58, '✕', {
+      .text(130, -78, '✕', {
         fontFamily: 'Segoe UI',
-        fontSize: '14px',
+        fontSize: '16px',
         color: '#e8b2a4',
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     close.on('pointerdown', () => this.hide());
 
-    this.root = scene.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2, [this.bg, this.title, close]);
+    this.root = scene.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2, [
+      this.panel,
+      icon,
+      this.title,
+      close,
+    ]);
     this.root.setScrollFactor(0);
     this.root.setDepth(200);
     this.root.setVisible(false);
@@ -66,20 +78,25 @@ export class BuildMenu {
     for (const b of this.buttons) b.destroy();
     this.buttons.length = 0;
 
-    const mobile = (this.scene.registry.get('session') as { platform?: string } | undefined)?.platform === 'mobile';
-    const rowH = mobile ? 48 : 34;
-    const fontSize = mobile ? '18px' : '15px';
+    const mobile =
+      (this.scene.registry.get('session') as { platform?: string } | undefined)?.platform ===
+      'mobile';
+    const rowH = mobile ? 48 : 36;
     const list = building.def.produceList;
-    const h = 80 + list.length * rowH;
-    this.bg.setSize(mobile ? 320 : 280, h);
+    const h = 100 + list.length * rowH;
+    if (this.panel instanceof Phaser.GameObjects.Image) {
+      this.panel.setDisplaySize(340, h);
+    } else {
+      this.panel.setSize(320, h);
+    }
 
     list.forEach((unitId, i) => {
       const def = isAircraftId(unitId) ? AIRCRAFT_DEFS[unitId] : TANK_DEFS[unitId];
       const affordable = credits >= def.buildCost && !building.queue && building.alive;
       const btn = this.scene.add
-        .text(0, -16 + i * rowH, labelFor(unitId), {
+        .text(0, -20 + i * rowH, labelFor(unitId), {
           fontFamily: 'Segoe UI',
-          fontSize,
+          fontSize: mobile ? '17px' : '15px',
           color: affordable ? '#d7e6d4' : '#6a7368',
           backgroundColor: affordable ? '#1a2a20' : '#151915',
           padding: { x: 16, y: mobile ? 12 : 8 },
@@ -102,16 +119,15 @@ export class BuildMenu {
     });
 
     const tip = this.scene.add
-      .text(0, h / 2 - 24, 'Kredit: ' + Math.floor(credits), {
+      .text(0, h / 2 - 28, `Kredit: $${Math.floor(credits)}`, {
         fontFamily: 'Segoe UI',
-        fontSize: '12px',
+        fontSize: '13px',
         color: '#c4a35a',
       })
       .setOrigin(0.5);
     this.root.add(tip);
     this.buttons.push(tip);
 
-    // Keep menu above mobile joystick zone
     this.root.setPosition(GAME_WIDTH / 2, mobile ? GAME_HEIGHT / 2 - 40 : GAME_HEIGHT / 2);
     this.root.setVisible(true);
   }

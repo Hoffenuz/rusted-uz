@@ -71,6 +71,13 @@ export class Tank extends Phaser.GameObjects.Container {
     this.bodySprite.setScale(scale);
     this.turretSprite.setScale(scale);
     this.barrelSprite.setScale(scale);
+
+    /**
+     * Deux Vies (layered): turret.png ALLAQACHON qurolni o‘z ichiga oladi.
+     * barrel.png ko‘pincha turret nusxasi — ikkalasini chizish = bijirlash / z-fight.
+     * Chinese separate: body + turret + barrel alohida.
+     */
+    this.barrelSprite.setVisible(!layered);
     this.add([this.bodySprite, this.turretSprite, this.barrelSprite]);
 
     this.selectRing = scene.add
@@ -147,7 +154,8 @@ export class Tank extends Phaser.GameObjects.Container {
   }
 
   get muzzle(): Phaser.Math.Vector2 {
-    const length = this.def.layerMode === 'separate' ? 28 : 22;
+    // layered turret art: barrel tip ~ half of 128px hull along aim
+    const length = this.def.layerMode === 'separate' ? 28 : 36 * this.def.scale;
     return new Phaser.Math.Vector2(
       this.x + Math.cos(this.turretAngle) * length,
       this.y + Math.sin(this.turretAngle) * length,
@@ -203,17 +211,18 @@ export class Tank extends Phaser.GameObjects.Container {
     const artOffset = this.def.bodyFacingOffset;
     this.bodySprite.setRotation(this.bodyAngle - artOffset);
     this.turretSprite.setRotation(this.turretAngle - artOffset);
-    this.barrelSprite.setRotation(this.turretAngle - artOffset);
 
-    // Pull separate barrels back onto the turret ring (along aim axis)
     if (this.def.layerMode === 'separate') {
+      this.barrelSprite.setVisible(true);
+      this.barrelSprite.setRotation(this.turretAngle - artOffset);
       const inset = this.def.barrelInset * this.def.scale;
       this.barrelSprite.setPosition(
         -Math.cos(this.turretAngle) * inset,
         -Math.sin(this.turretAngle) * inset,
       );
     } else {
-      this.barrelSprite.setPosition(0, 0);
+      // layered: gun is baked into turret art
+      this.barrelSprite.setVisible(false);
     }
   }
 

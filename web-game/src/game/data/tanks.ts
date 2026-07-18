@@ -38,11 +38,12 @@ export interface TankDef {
 
 /**
  * Target longest body edge on screen (px).
- * Uses max(w,h) so wide Chinese sprites and square Deux Vies hulls match.
+ * ~118 keeps Deux Vies 128px hulls near 1:1 (kamroq blur).
  */
-const TARGET_SIZE = 88;
+const TARGET_SIZE = 118;
 const scaleFromMax = (w: number, h: number) => TARGET_SIZE / Math.max(w, h);
 
+/** Deux Vies: hull + turret (gun baked in). Do NOT stack barrel — duplicate art. */
 const dv = {
   bodyFacingOffset: -Math.PI / 2,
   layerMode: 'layered' as const,
@@ -64,7 +65,7 @@ export const TANK_DEFS: Record<TankId, TankDef> = {
     fireCooldownMs: 900,
     damage: 85,
     projectileSpeed: 520,
-    scale: scaleFromMax(114, 364),
+    scale: scaleFromMax(114, 364) * 0.92,
     bodyFacingOffset: -Math.PI / 2,
     layerMode: 'separate',
     barrelOriginY: 0.94,
@@ -84,11 +85,12 @@ export const TANK_DEFS: Record<TankId, TankDef> = {
     fireCooldownMs: 700,
     damage: 55,
     projectileSpeed: 560,
-    scale: scaleFromMax(200, 320),
+    // Chinese art visually bulkier — slightly smaller than DV hulls
+    scale: scaleFromMax(200, 320) * 0.82,
     bodyFacingOffset: -Math.PI / 2,
-    layerMode: 'layered',
-    barrelOriginY: 0.5,
-    barrelInset: 0,
+    layerMode: 'separate',
+    barrelOriginY: 0.92,
+    barrelInset: 14,
     buildCost: 250,
     buildTimeMs: 4000,
   },
@@ -104,11 +106,11 @@ export const TANK_DEFS: Record<TankId, TankDef> = {
     fireCooldownMs: 750,
     damage: 60,
     projectileSpeed: 540,
-    scale: scaleFromMax(216, 445),
+    scale: scaleFromMax(216, 445) * 0.88,
     bodyFacingOffset: -Math.PI / 2,
-    layerMode: 'layered',
-    barrelOriginY: 0.5,
-    barrelInset: 0,
+    layerMode: 'separate',
+    barrelOriginY: 0.92,
+    barrelInset: 14,
     buildCost: 280,
     buildTimeMs: 4500,
   },
@@ -124,11 +126,11 @@ export const TANK_DEFS: Record<TankId, TankDef> = {
     fireCooldownMs: 850,
     damage: 75,
     projectileSpeed: 500,
-    scale: scaleFromMax(152, 250),
+    scale: scaleFromMax(152, 250) * 0.8,
     bodyFacingOffset: -Math.PI / 2,
-    layerMode: 'layered',
-    barrelOriginY: 0.5,
-    barrelInset: 0,
+    layerMode: 'separate',
+    barrelOriginY: 0.92,
+    barrelInset: 16,
     buildCost: 380,
     buildTimeMs: 5500,
   },

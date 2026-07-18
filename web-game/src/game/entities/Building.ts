@@ -48,14 +48,14 @@ export class Building extends Phaser.GameObjects.Container {
 
     if (this.def.padTexture && scene.textures.exists(this.def.padTexture)) {
       const pad = scene.add.image(0, 8, this.def.padTexture).setOrigin(0.5);
-      pad.setScale(this.def.scale * 1.05);
-      pad.setAlpha(0.85);
+      // Pad slightly under building, same visual family — not larger than hull
+      pad.setScale(this.def.scale * 0.92);
+      pad.setAlpha(0.8);
       this.add(pad);
     }
 
     this.sprite = scene.add.image(0, 0, this.def.texture).setOrigin(0.5);
     this.sprite.setScale(this.def.scale);
-    if (this.team === 'enemy') this.sprite.setTint(0xffd5cc);
     this.add(this.sprite);
 
     const top = -this.sprite.displayHeight * 0.48;

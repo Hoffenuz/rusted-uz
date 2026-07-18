@@ -6,6 +6,8 @@ import { Building } from '../entities/Building';
 import { BuildMenu } from '../ui/BuildMenu';
 import { MobileControls } from '../ui/MobileControls';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { BattleHud } from '../ui/BattleHud';
+import { Effects } from '../fx/Effects';
 import {
   ALLIES_BUILD,
   AXIS_BUILD,
@@ -50,14 +52,17 @@ export class BattleScene extends Phaser.Scene {
   private keyG!: Phaser.Input.Keyboard.Key;
   private escKey!: Phaser.Input.Keyboard.Key;
   private pointerWorld = new Phaser.Math.Vector2();
-  private statusText!: Phaser.GameObjects.Text;
   private toastText!: Phaser.GameObjects.Text;
   private buildMenu!: BuildMenu;
   private mobile?: MobileControls;
   private confirm!: ConfirmDialog;
+  private hud!: BattleHud;
+  private fx!: Effects;
   private whiteReady = false;
   private blockWorldClickUntil = 0;
   private session: SessionConfig = { ...DEFAULT_SESSION };
+  private dustTimer = 0;
+  private battleOver = false;
 
   private myUnit: Controllable | null = null;
 
@@ -128,7 +133,8 @@ export class BattleScene extends Phaser.Scene {
       x: 1780,
       y: 340,
       textureOverride: 'bld-base-enemy',
-      scaleOverride: 0.95,
+      // 245×170 → ~130px
+      scaleOverride: 130 / 245,
     });
     this.enemyAirbase = new Building(this, {
       kind: 'airbase',
@@ -198,6 +204,8 @@ export class BattleScene extends Phaser.Scene {
     this.takeControl(myTank);
     this.cameras.main.centerOn(myTank.x, myTank.y);
 
+    this.fx = new Effects(this);
+    this.hud = new BattleHud(this);
     this.buildMenu = new BuildMenu(this);
     this.confirm = new ConfirmDialog(this);
     if (this.session.platform === 'mobile') {
@@ -331,6 +339,10 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
 
+      if (this.session.platform === 'mobile') {
+        this.fx.touch(pointer.x, pointer.y);
+      }
+
       // Mobile tap-to-move when not firing via button
       if (this.session.platform === 'mobile' && this.myUnit?.alive && !this.mobile?.firing) {
         this.myUnit.setMoveTarget(pointer.worldX, pointer.worldY);
@@ -339,19 +351,6 @@ export class BattleScene extends Phaser.Scene {
 
       this.tryFire(this.myUnit);
     });
-
-    this.statusText = this.add
-      .text(GAME_WIDTH - 16, 16, '', {
-        fontFamily: 'Segoe UI',
-        fontSize: '13px',
-        color: '#d7e6d4',
-        align: 'right',
-        backgroundColor: 'rgba(8,14,12,0.55)',
-        padding: { x: 10, y: 8 },
-      })
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setDepth(100);
 
     this.toastText = this.add
       .text(GAME_WIDTH / 2, this.session.platform === 'mobile' ? GAME_HEIGHT - 210 : GAME_HEIGHT - 28, '', {
@@ -465,15 +464,7 @@ export class BattleScene extends Phaser.Scene {
     shot.launch(muzzle.x, muzzle.y, angle, speed, damage, unit.team);
     unit.markFired(this.time.now);
     this.sound.play('sfx-cannon', { volume: unit.team === 'player' ? 0.4 : 0.28 });
-
-    const flash = this.add.circle(muzzle.x, muzzle.y, 7, 0xffe6a8, 0.85).setDepth(25);
-    this.tweens.add({
-      targets: flash,
-      alpha: 0,
-      scale: 2.2,
-      duration: 120,
-      onComplete: () => flash.destroy(),
-    });
+    this.fx.muzzle(muzzle.x, muzzle.y, angle);
   }
 
   private updateProduction(delta: number) {
@@ -712,7 +703,7 @@ export class BattleScene extends Phaser.Scene {
         shot.kill();
         this.sound.play(killed ? 'sfx-explode' : 'sfx-ricochet', { volume: killed ? 0.5 : 0.28 });
         if (killed) {
-          this.spawnBoom(tank.x, tank.y);
+          this.fx.explode(tank.x, tank.y, true);
           if (tank === this.myUnit) this.recoverControl();
         }
         hit = true;
@@ -727,7 +718,7 @@ export class BattleScene extends Phaser.Scene {
         shot.kill();
         this.sound.play(killed ? 'sfx-explode' : 'sfx-ricochet', { volume: killed ? 0.5 : 0.25 });
         if (killed) {
-          this.spawnBoom(air.x, air.y);
+          this.fx.explode(air.x, air.y, false);
           if (air === this.myUnit) this.recoverControl();
         }
         hit = true;
@@ -741,7 +732,7 @@ export class BattleScene extends Phaser.Scene {
         const destroyed = bld.takeDamage(shot.damage * 0.7);
         shot.kill();
         this.sound.play(destroyed ? 'sfx-explode' : 'sfx-ricochet', { volume: destroyed ? 0.55 : 0.25 });
-        if (destroyed) this.spawnBoom(bld.x, bld.y);
+        if (destroyed) this.fx.explode(bld.x, bld.y, true);
         break;
       }
     }
@@ -751,17 +742,6 @@ export class BattleScene extends Phaser.Scene {
     this.myUnit = null;
     const next = this.controllableUnits()[0];
     if (next) this.takeControl(next);
-  }
-
-  private spawnBoom(x: number, y: number) {
-    const boom = this.add.circle(x, y, 14, 0xffb060, 0.9).setDepth(30);
-    this.tweens.add({
-      targets: boom,
-      alpha: 0,
-      scale: 4,
-      duration: 380,
-      onComplete: () => boom.destroy(),
-    });
   }
 
   private askLeave() {
@@ -858,8 +838,16 @@ export class BattleScene extends Phaser.Scene {
         if (this.wasd.D.isDown || this.cursors.right?.isDown) drive.steer += 1;
       }
 
-      if (mine instanceof Tank) mine.updateTank(delta, drive);
-      else mine.updateAircraft(delta, drive);
+      if (mine instanceof Tank) {
+        mine.updateTank(delta, drive);
+        if (Math.abs(drive.throttle) > 0.25) {
+          this.dustTimer -= delta;
+          if (this.dustTimer <= 0) {
+            this.dustTimer = 90;
+            this.fx.dust(mine.x, mine.y);
+          }
+        }
+      } else mine.updateAircraft(delta, drive);
 
       if (this.fireKey.isDown || this.mobile?.firing) this.tryFire(mine);
       this.cameras.main.startFollow(mine, true, 0.12, 0.12);
@@ -867,9 +855,11 @@ export class BattleScene extends Phaser.Scene {
       this.cameras.main.startFollow(this.playerFactory, true, 0.05, 0.05);
     }
 
-    this.updateEconomy(delta);
-    this.updateProduction(delta);
-    this.updateAi(delta);
+    if (!this.battleOver) {
+      this.updateEconomy(delta);
+      this.updateProduction(delta);
+      this.updateAi(delta);
+    }
     this.resolveHits();
     this.refreshHud();
   }
@@ -884,39 +874,45 @@ export class BattleScene extends Phaser.Scene {
 
     const mine = this.myUnit?.alive ? this.myUnit : null;
     const line = mine
-      ? `SIZNING TEXNIKANGIZ: ${mine.def.displayName}  HP ${Math.round(mine.hp)}/${mine.def.maxHp}`
-      : 'Texnika yo‘q — zavod/aerodromdan chiqaring';
+      ? `${mine.def.displayName}  HP ${Math.round(mine.hp)}/${mine.def.maxHp}`
+      : 'Texnika yo‘q — zavoddan chiqaring';
 
     const factoryBusy = this.playerFactory.queue
       ? `Zavod: ${unitName(this.playerFactory.queue.unitId)} ${Math.ceil(this.playerFactory.queue.remainingMs / 1000)}s`
-      : 'Zavod: bo‘sh (bosing)';
+      : 'Zavod: bo‘sh';
     const airBusy = this.playerAirbase.queue
-      ? `Aerodrom: ${unitName(this.playerAirbase.queue.unitId)} ${Math.ceil(this.playerAirbase.queue.remainingMs / 1000)}s`
-      : 'Aerodrom: bo‘sh (bosing)';
+      ? `Havo: ${unitName(this.playerAirbase.queue.unitId)} ${Math.ceil(this.playerAirbase.queue.remainingMs / 1000)}s`
+      : 'Havo: bo‘sh';
     const heliBusy = this.playerHelipad.queue
-      ? `Vert.baza: ${unitName(this.playerHelipad.queue.unitId)} ${Math.ceil(this.playerHelipad.queue.remainingMs / 1000)}s`
-      : 'Vert.baza: bo‘sh (bosing)';
+      ? `Vert: ${unitName(this.playerHelipad.queue.unitId)} ${Math.ceil(this.playerHelipad.queue.remainingMs / 1000)}s`
+      : 'Vert: bo‘sh';
 
     const playerBase = this.buildings.some((b) => b.team === 'player' && b.alive);
     const enemyBase = this.buildings.some((b) => b.team === 'enemy' && b.alive);
-    let state = 'Jang davom etmoqda';
-    if (!enemyBase && enemiesAlive === 0) state = 'G‘ALABA';
-    if (!playerBase && playersAlive === 0) state = 'MAG‘LUBIYAT';
 
-    this.statusText.setText(
-      [
-        `Kredit: ${Math.floor(this.playerCredits)}`,
-        line,
-        factoryBusy,
-        airBusy,
-        heliBusy,
-        `O‘yinchi: ${playersAlive}   Dushman: ${enemiesAlive}`,
-        this.session.platform === 'mobile'
-          ? 'Joystick · OT otish · B zavod · R almashtirish · ☰ menu'
-          : '1–2 tank · 3 samolyot · 4 vertolyot · ESC menu',
-        state,
-      ].join('\n'),
-    );
+    this.hud.setCredits(this.playerCredits);
+    this.hud.setArmy(playersAlive, enemiesAlive);
+    this.hud.setStatus([
+      line,
+      factoryBusy,
+      airBusy,
+      heliBusy,
+      this.session.platform === 'mobile'
+        ? 'OT · B · R · ☰'
+        : '1–4 build · ESC menu',
+    ]);
+
+    if (!this.battleOver) {
+      if (!enemyBase && enemiesAlive === 0) {
+        this.battleOver = true;
+        this.hud.showBanner('G‘ALABA', true);
+        this.showToast('Dushman yo‘q qilindi!');
+      } else if (!playerBase && playersAlive === 0) {
+        this.battleOver = true;
+        this.hud.showBanner('MAG‘LUBIYAT', false);
+        this.showToast('Bazangiz vayron…');
+      }
+    }
   }
 }
 

@@ -34,41 +34,58 @@ export class MainMenuScene extends Phaser.Scene {
       this.add
         .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'loading-art')
         .setDisplaySize(GAME_WIDTH, GAME_HEIGHT)
-        .setAlpha(0.2);
+        .setAlpha(0.18);
+    }
+
+    // Soft vignette
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.25);
+
+    if (this.textures.exists('ui-panel-menu')) {
+      this.add
+        .image(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20, 'ui-panel-menu')
+        .setDisplaySize(720, 520)
+        .setAlpha(0.55);
+    }
+
+    if (this.textures.exists('ui-title')) {
+      this.add
+        .image(GAME_WIDTH / 2, 70, 'ui-title')
+        .setDisplaySize(320, 126)
+        .setAlpha(0.95);
+    } else {
+      this.add
+        .text(GAME_WIDTH / 2, 56, '雷鸣战场', {
+          fontFamily: 'Segoe UI',
+          fontSize: '40px',
+          fontStyle: 'bold',
+          color: '#e8d7a8',
+        })
+        .setOrigin(0.5);
     }
 
     this.add
-      .text(GAME_WIDTH / 2, 48, '雷鸣战场', {
+      .text(GAME_WIDTH / 2, 148, 'Jang menyusi · Rusted Warfare ruhida', {
         fontFamily: 'Segoe UI',
-        fontSize: '40px',
-        fontStyle: 'bold',
-        color: '#e8d7a8',
-      })
-      .setOrigin(0.5);
-
-    this.add
-      .text(GAME_WIDTH / 2, 88, 'Main Menu', {
-        fontFamily: 'Segoe UI',
-        fontSize: '16px',
+        fontSize: '15px',
         color: '#9fb59a',
       })
       .setOrigin(0.5);
 
-    this.selected.platform = this.row(150, 'Qurilma', [
+    this.selected.platform = this.row(210, 'Qurilma', [
       { label: 'PC', value: 'pc', kind: 'platform' },
       { label: 'Mobile', value: 'mobile', kind: 'platform' },
     ]);
-    this.selected.faction = this.row(250, 'Jamoa', [
+    this.selected.faction = this.row(290, 'Jamoa', [
       { label: 'Axis', value: 'axis', kind: 'faction' },
       { label: 'Allies', value: 'allies', kind: 'faction' },
     ]);
-    this.selected.battle = this.row(350, 'Jang', [
+    this.selected.battle = this.row(370, 'Jang', [
       { label: 'Skirmish', value: 'skirmish', kind: 'battle' },
       { label: 'Hujum', value: 'assault', kind: 'battle' },
     ]);
 
     this.summary = this.add
-      .text(GAME_WIDTH / 2, 430, '', {
+      .text(GAME_WIDTH / 2, 440, '', {
         fontFamily: 'Segoe UI',
         fontSize: '15px',
         color: '#c4a35a',
@@ -78,7 +95,7 @@ export class MainMenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const start = this.add
-      .text(GAME_WIDTH / 2, 510, 'JANGNI BOSHLASH', {
+      .text(GAME_WIDTH / 2, 520, 'JANGNI BOSHLASH', {
         fontFamily: 'Segoe UI',
         fontSize: '26px',
         fontStyle: 'bold',
@@ -94,7 +111,7 @@ export class MainMenuScene extends Phaser.Scene {
     start.on('pointerdown', () => this.startGame());
 
     const exit = this.add
-      .text(GAME_WIDTH / 2, 590, 'Chiqish', {
+      .text(GAME_WIDTH / 2, 600, 'Chiqish', {
         fontFamily: 'Segoe UI',
         fontSize: '16px',
         color: '#e8b2a4',
@@ -108,7 +125,6 @@ export class MainMenuScene extends Phaser.Scene {
       this.dialog.show(
         'Chiqishni xohlaysizmi?\n(Brauzer oynasini yopishingiz mumkin)',
         () => {
-          // Best-effort close; browsers may block. Fallback: blank page.
           window.close();
           document.body.innerHTML =
             '<div style="display:grid;place-items:center;height:100vh;background:#0c1210;color:#e8d7a8;font-family:Segoe UI">O‘yin yopildi. Varaqni yoping.</div>';
@@ -117,7 +133,7 @@ export class MainMenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(GAME_WIDTH / 2, 660, 'Mobile: joystick + OT/B/R · PC: WASD · Space · ESC = menu', {
+      .text(GAME_WIDTH / 2, 660, 'Kredit yig‘ing · zavoddan tank · dushman bazasini yo‘q qiling', {
         fontFamily: 'Segoe UI',
         fontSize: '13px',
         color: '#7a8a78',
