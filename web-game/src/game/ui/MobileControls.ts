@@ -4,13 +4,13 @@ import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import type { AllyStance } from '../data/tanks';
 
 /**
- * On-screen joystick + action buttons for mobile.
- * Uses /assets/ui joystick pack.
+ * Mobil joystick — katta chap zona + sahnadagi (konteynersiz) hit area.
+ * Harakat faqat joystick orqali.
  */
 export class MobileControls {
-  private readonly root: Phaser.GameObjects.Container;
   private readonly base: Phaser.GameObjects.Image;
   private readonly knob: Phaser.GameObjects.Image;
+  private readonly joyZone: Phaser.GameObjects.Zone;
   private readonly fireBtn: Phaser.GameObjects.Container;
   private readonly cycleBtn: Phaser.GameObjects.Container;
   private readonly buildBtn: Phaser.GameObjects.Container;
@@ -19,12 +19,17 @@ export class MobileControls {
   private readonly stanceLabel: Phaser.GameObjects.Text;
 
   private activePointerId: number | null = null;
+  private readonly home = new Phaser.Math.Vector2(128, GAME_HEIGHT - 108);
   private readonly origin = new Phaser.Math.Vector2();
-  private readonly maxRadius = 58;
-  private readonly uiBottom = 220;
+  private readonly maxRadius = 64;
 
   drive: DriveInput = { throttle: 0, steer: 0 };
   firing = false;
+  /** Joystick hozir ushlanmoqdami */
+  get steering() {
+    return this.activePointerId !== null;
+  }
+
   private cycleLatched = false;
   private buildLatched = false;
   private menuLatched = false;
@@ -32,46 +37,40 @@ export class MobileControls {
   private stanceChanged = false;
 
   constructor(private readonly scene: Phaser.Scene) {
-    const y = GAME_HEIGHT - 120;
-    this.base = scene.add.image(120, y, 'ui-joy-base').setDisplaySize(150, 150).setAlpha(0.82);
-    this.knob = scene.add.image(120, y, 'ui-joy-knob').setDisplaySize(68, 68).setAlpha(0.95);
-    this.origin.set(120, y);
+    this.origin.copy(this.home);
 
-    this.fireBtn = this.makeRoundButton(GAME_WIDTH - 105, y + 10, 0xc45c3a, 'OT', 38);
-    this.cycleBtn = this.makeRoundButton(GAME_WIDTH - 105, y - 95, 0xc4a35a, 'R', 30);
-    this.buildBtn = this.makeRoundButton(GAME_WIDTH - 200, y + 10, 0x4c8f6a, 'B', 30);
-    this.stanceBtn = this.makeRoundButton(GAME_WIDTH - 200, y - 95, 0x5a7a9a, 'AI', 30);
-    this.menuBtn = this.makeRoundButton(GAME_WIDTH - 52, 52, 0x2a3530, '☰', 26);
+    this.base = scene.add
+      .image(this.home.x, this.home.y, 'ui-joy-base')
+      .setDisplaySize(160, 160)
+      .setAlpha(0.78)
+      .setScrollFactor(0)
+      .setDepth(450);
 
-    this.stanceLabel = scene.add
-      .text(GAME_WIDTH - 200, y - 140, 'AI: auto', {
-        fontFamily: 'Segoe UI',
-        fontSize: '12px',
-        color: '#c4a35a',
-        backgroundColor: 'rgba(8,14,12,0.55)',
-        padding: { x: 6, y: 3 },
-      })
-      .setOrigin(0.5);
+    this.knob = scene.add
+      .image(this.home.x, this.home.y, 'ui-joy-knob')
+      .setDisplaySize(72, 72)
+      .setAlpha(0.95)
+      .setScrollFactor(0)
+      .setDepth(451);
 
-    this.root = scene.add.container(0, 0, [
-      this.base,
-      this.knob,
-      this.fireBtn,
-      this.cycleBtn,
-      this.buildBtn,
-      this.stanceBtn,
-      this.menuBtn,
-      this.stanceLabel,
-    ]);
-    this.root.setScrollFactor(0).setDepth(300);
-
-    // Wider invisible hit for stick
-    this.base.setInteractive(new Phaser.Geom.Circle(0, 0, 78), Phaser.Geom.Circle.Contains);
-    this.knob.setInteractive(new Phaser.Geom.Circle(0, 0, 42), Phaser.Geom.Circle.Contains);
+    // Faqat pastki chap — production bar (yuqoriroq) ni yopmasin
+    this.joyZone = scene.add.zone(140, GAME_HEIGHT - 100, 280, 200);
+    this.joyZone.setScrollFactor(0).setDepth(448);
+    this.joyZone.setInteractive(
+      new Phaser.Geom.Rectangle(-140, -100, 280, 200),
+      Phaser.Geom.Rectangle.Contains,
+    );
 
     const startJoy = (p: Phaser.Input.Pointer) => {
       p.event?.stopPropagation?.();
       this.activePointerId = p.id;
+      // Dinamik markaz: barmoq bosgan joy
+      this.origin.set(
+        Phaser.Math.Clamp(p.x, 64, 240),
+        Phaser.Math.Clamp(p.y, GAME_HEIGHT - 190, GAME_HEIGHT - 40),
+      );
+      this.base.setPosition(this.origin.x, this.origin.y);
+      this.knob.setPosition(this.origin.x, this.origin.y);
       this.updateKnob(p.x, p.y);
     };
     const moveJoy = (p: Phaser.Input.Pointer) => {
@@ -81,15 +80,40 @@ export class MobileControls {
     const endJoy = (p: Phaser.Input.Pointer) => {
       if (this.activePointerId !== p.id) return;
       this.activePointerId = null;
-      this.knob.setPosition(this.origin.x, this.origin.y);
+      this.origin.copy(this.home);
+      this.base.setPosition(this.home.x, this.home.y);
+      this.knob.setPosition(this.home.x, this.home.y);
       this.drive = { throttle: 0, steer: 0 };
     };
 
+    this.joyZone.on('pointerdown', startJoy);
+    this.base.setInteractive(new Phaser.Geom.Circle(0, 0, 80), Phaser.Geom.Circle.Contains);
+    this.knob.setInteractive(new Phaser.Geom.Circle(0, 0, 44), Phaser.Geom.Circle.Contains);
     this.base.on('pointerdown', startJoy);
     this.knob.on('pointerdown', startJoy);
+
     scene.input.on('pointermove', moveJoy);
     scene.input.on('pointerup', endJoy);
     scene.input.on('pointerupoutside', endJoy);
+
+    const by = GAME_HEIGHT - 118;
+    this.fireBtn = this.makeRoundButton(GAME_WIDTH - 100, by + 8, 0xc45c3a, 'OT', 40);
+    this.cycleBtn = this.makeRoundButton(GAME_WIDTH - 100, by - 100, 0xc4a35a, 'R', 30);
+    this.buildBtn = this.makeRoundButton(GAME_WIDTH - 198, by + 8, 0x4c8f6a, 'B', 30);
+    this.stanceBtn = this.makeRoundButton(GAME_WIDTH - 198, by - 100, 0x5a7a9a, 'AI', 30);
+    this.menuBtn = this.makeRoundButton(GAME_WIDTH - 52, 52, 0x2a3530, '☰', 26);
+
+    this.stanceLabel = scene.add
+      .text(GAME_WIDTH - 198, by - 145, 'AI: auto', {
+        fontFamily: 'Segoe UI',
+        fontSize: '12px',
+        color: '#c4a35a',
+        backgroundColor: 'rgba(8,14,12,0.55)',
+        padding: { x: 6, y: 3 },
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(452);
 
     this.bindHold(this.fireBtn, (v) => {
       this.firing = v;
@@ -113,16 +137,19 @@ export class MobileControls {
     });
   }
 
-  /** True if this screen point is over joystick / buttons (block world tap). */
+  /** World tapni bloklash — joystick / tugmalar / pastki UI. */
   blocksWorldInput(x: number, y: number): boolean {
-    if (y > GAME_HEIGHT - this.uiBottom) return true;
-    // top-right menu
+    // Chap past — joystick
+    if (x < 290 && y > GAME_HEIGHT - 210) return true;
+    // O‘ng past — OT / R / B / AI
+    if (x > GAME_WIDTH - 250 && y > GAME_HEIGHT - 260) return true;
+    // Yuqori o‘ng menu
     if (x > GAME_WIDTH - 90 && y < 90) return true;
     return false;
   }
 
   private makeRoundButton(x: number, y: number, color: number, label: string, radius: number) {
-    const bg = this.scene.add.circle(0, 0, radius, color, 0.88).setStrokeStyle(2, 0xffffff, 0.35);
+    const bg = this.scene.add.circle(0, 0, radius, color, 0.9).setStrokeStyle(2, 0xffffff, 0.35);
     const text = this.scene.add
       .text(0, 0, label, {
         fontFamily: 'Segoe UI',
@@ -133,7 +160,9 @@ export class MobileControls {
       .setOrigin(0.5);
     const c = this.scene.add.container(x, y, [bg, text]);
     c.setSize(radius * 2, radius * 2);
-    c.setInteractive(new Phaser.Geom.Circle(0, 0, radius + 4), Phaser.Geom.Circle.Contains);
+    c.setScrollFactor(0);
+    c.setDepth(452);
+    c.setInteractive(new Phaser.Geom.Circle(0, 0, radius + 6), Phaser.Geom.Circle.Contains);
     return c;
   }
 
@@ -161,8 +190,7 @@ export class MobileControls {
     const dx = px - this.origin.x;
     const dy = py - this.origin.y;
     const len = Math.hypot(dx, dy) || 1;
-    const dead = 10;
-    if (len < dead) {
+    if (len < 12) {
       this.knob.setPosition(this.origin.x, this.origin.y);
       this.drive = { throttle: 0, steer: 0 };
       return;
@@ -171,6 +199,7 @@ export class MobileControls {
     const nx = (dx / len) * clamped;
     const ny = (dy / len) * clamped;
     this.knob.setPosition(this.origin.x + nx, this.origin.y + ny);
+    // Yuqori = oldinga (throttle +), o‘ng = o‘ngga burilish
     this.drive = {
       throttle: Phaser.Math.Clamp(-ny / this.maxRadius, -1, 1),
       steer: Phaser.Math.Clamp(nx / this.maxRadius, -1, 1),
@@ -202,10 +231,26 @@ export class MobileControls {
   }
 
   setVisible(v: boolean) {
-    this.root.setVisible(v);
+    this.base.setVisible(v);
+    this.knob.setVisible(v);
+    this.joyZone.setVisible(v);
+    this.fireBtn.setVisible(v);
+    this.cycleBtn.setVisible(v);
+    this.buildBtn.setVisible(v);
+    this.stanceBtn.setVisible(v);
+    this.menuBtn.setVisible(v);
+    this.stanceLabel.setVisible(v);
   }
 
   destroy() {
-    this.root.destroy(true);
+    this.base.destroy();
+    this.knob.destroy();
+    this.joyZone.destroy();
+    this.fireBtn.destroy(true);
+    this.cycleBtn.destroy(true);
+    this.buildBtn.destroy(true);
+    this.stanceBtn.destroy(true);
+    this.menuBtn.destroy(true);
+    this.stanceLabel.destroy();
   }
 }

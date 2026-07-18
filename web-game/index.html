@@ -64,8 +64,9 @@
       html.fs-mobile #hud-overlay { display: none !important; }
       #game-root canvas {
         outline: none;
-        /* auto = yumshoq PNG + aylanish; pixelated bijirlatardi */
-        image-rendering: auto;
+        /* PNG pixel-perfect — brauzer blur yo‘q */
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
         touch-action: none;
       }
       #hud-overlay {

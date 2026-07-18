@@ -85,13 +85,14 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create() {
+    // Unit/UI PNG — NEAREST (fayldagidek keskin). Faqat katta xarita LINEAR.
     for (const key of this.textures.getTextureKeys()) {
       if (key === '__DEFAULT' || key === '__MISSING') continue;
-      const nearest = key.startsWith('ui-joy') || key.startsWith('fx-');
+      const softMap = key === 'map' || key === 'loading-art';
       this.textures
         .get(key)
         .setFilter(
-          nearest ? Phaser.Textures.FilterMode.NEAREST : Phaser.Textures.FilterMode.LINEAR,
+          softMap ? Phaser.Textures.FilterMode.LINEAR : Phaser.Textures.FilterMode.NEAREST,
         );
     }
     this.scene.start('MainMenu');

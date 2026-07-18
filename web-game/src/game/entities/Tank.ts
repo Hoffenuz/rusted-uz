@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import {
   assetKeys,
   TANK_DEFS,
+  tankScale,
   type AllyStance,
   type TankDef,
   type TankId,
@@ -43,9 +44,12 @@ export class Tank extends Phaser.GameObjects.Container {
   private readonly nameLabel: Phaser.GameObjects.Text;
   private readonly ownerLabel: Phaser.GameObjects.Text;
   private readonly selectRing: Phaser.GameObjects.Ellipse;
+  private readonly rangeRing: Phaser.GameObjects.Graphics;
+  private readonly visualScale: number;
   private cooldownUntil = 0;
   private moveTarget: Phaser.Math.Vector2 | null = null;
   private aimPoint = new Phaser.Math.Vector2();
+  private rangeTween?: Phaser.Tweens.Tween;
 
   constructor(scene: Phaser.Scene, options: TankSpawnOptions) {
     super(scene, options.x, options.y);
@@ -59,7 +63,6 @@ export class Tank extends Phaser.GameObjects.Container {
     this.aimPoint.set(options.x + Math.cos(this.bodyAngle) * 100, options.y + Math.sin(this.bodyAngle) * 100);
 
     const keys = assetKeys(options.id);
-    const scale = this.def.scale;
     const layered = this.def.layerMode === 'layered';
 
     this.bodySprite = scene.add.image(0, 0, keys.body).setOrigin(0.5);
@@ -68,37 +71,45 @@ export class Tank extends Phaser.GameObjects.Container {
       .image(0, 0, keys.barrel)
       .setOrigin(0.5, layered ? 0.5 : this.def.barrelOriginY);
 
-    this.bodySprite.setScale(scale);
-    this.turretSprite.setScale(scale);
-    this.barrelSprite.setScale(scale);
+    // Avvalgi bir xil ekran balandligi (~72px)
+    const texH = Math.max(1, this.bodySprite.height || this.def.bodyH);
+    this.visualScale = tankScale(texH);
+    this.bodySprite.setScale(this.visualScale);
+    this.turretSprite.setScale(this.visualScale);
+    this.barrelSprite.setScale(this.visualScale);
 
     /**
      * Deux Vies (layered): turret.png ALLAQACHON qurolni o‘z ichiga oladi.
      * barrel.png ko‘pincha turret nusxasi — ikkalasini chizish = bijirlash / z-fight.
-     * Chinese separate: body + turret + barrel alohida.
      */
     this.barrelSprite.setVisible(!layered);
-    this.add([this.bodySprite, this.turretSprite, this.barrelSprite]);
+
+    // Otish maydoni — ingichka aylana (faqat boshqarilayotganda)
+    this.rangeRing = scene.add.graphics();
+    this.rangeRing.lineStyle(1.25, 0x8fd4a0, 0.55);
+    this.rangeRing.strokeCircle(0, 0, this.def.attackRange);
+    this.rangeRing.setVisible(false);
 
     this.selectRing = scene.add
-      .ellipse(0, 0, 56, 40, 0x000000, 0)
+      .ellipse(0, 0, 64, 44, 0x000000, 0)
       .setStrokeStyle(2, 0x6ecf7a, 1)
       .setVisible(false);
-    this.add(this.selectRing);
 
-    this.hpBg = scene.add.rectangle(0, -36, 48, 5, 0x111111, 0.85);
+    this.add([this.rangeRing, this.bodySprite, this.turretSprite, this.barrelSprite, this.selectRing]);
+
+    this.hpBg = scene.add.rectangle(0, -42, 52, 5, 0x111111, 0.85);
     this.hpFill = scene.add
-      .rectangle(-24, -36, 48, 5, this.team === 'player' ? 0x4caf70 : 0xd35a3d)
+      .rectangle(-26, -42, 52, 5, this.team === 'player' ? 0x4caf70 : 0xd35a3d)
       .setOrigin(0, 0.5);
     this.nameLabel = scene.add
-      .text(0, -46, this.def.displayName, {
+      .text(0, -52, this.def.displayName, {
         fontFamily: 'Segoe UI',
         fontSize: '10px',
         color: this.team === 'player' ? '#b7e0b8' : '#e8b2a4',
       })
       .setOrigin(0.5);
     this.ownerLabel = scene.add
-      .text(0, 40, 'MENING TANKIM', {
+      .text(0, 44, 'MENING TANKIM', {
         fontFamily: 'Segoe UI',
         fontSize: '11px',
         fontStyle: 'bold',
@@ -114,14 +125,14 @@ export class Tank extends Phaser.GameObjects.Container {
     scene.physics.add.existing(this);
 
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(40, 40);
-    body.setOffset(-20, -20);
+    body.setSize(48, 48);
+    body.setOffset(-24, -24);
     body.setCollideWorldBounds(true);
     body.setAllowGravity(false);
     body.moves = false;
 
-    this.setSize(44, 44);
-    this.setInteractive(new Phaser.Geom.Circle(0, 0, 22), Phaser.Geom.Circle.Contains);
+    this.setSize(52, 52);
+    this.setInteractive(new Phaser.Geom.Circle(0, 0, 28), Phaser.Geom.Circle.Contains);
 
     this.setDepth(10);
     this.setPlayerDriven(false);
@@ -135,10 +146,40 @@ export class Tank extends Phaser.GameObjects.Container {
     if (this.isPlayerDriven) {
       this.selectRing.setStrokeStyle(2, 0xffe08a, 1);
       this.nameLabel.setColor('#ffe08a');
+      this.flashRangeRing();
     } else if (this.alive) {
       this.selectRing.setVisible(false);
+      this.hideRangeRing();
       this.nameLabel.setColor(this.team === 'player' ? '#b7e0b8' : '#e8b2a4');
     }
+  }
+
+  /** Tanlanganda otish doirasi qisqa ko‘rinadi, keyin yo‘qoladi. */
+  flashRangeRing() {
+    if (!this.alive) return;
+    this.rangeTween?.stop();
+    this.rangeRing.clear();
+    this.rangeRing.lineStyle(1.25, 0xffe08a, 0.65);
+    this.rangeRing.strokeCircle(0, 0, this.def.attackRange);
+    this.rangeRing.setVisible(true);
+    this.rangeRing.setAlpha(1);
+    this.rangeTween = this.scene.tweens.add({
+      targets: this.rangeRing,
+      alpha: 0,
+      delay: 1400,
+      duration: 450,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        this.rangeRing.setVisible(false);
+        this.rangeRing.setAlpha(1);
+      },
+    });
+  }
+
+  private hideRangeRing() {
+    this.rangeTween?.stop();
+    this.rangeRing.setVisible(false);
+    this.rangeRing.setAlpha(1);
   }
 
   setMoveTarget(x: number, y: number) {
@@ -154,8 +195,7 @@ export class Tank extends Phaser.GameObjects.Container {
   }
 
   get muzzle(): Phaser.Math.Vector2 {
-    // layered turret art: barrel tip ~ half of 128px hull along aim
-    const length = this.def.layerMode === 'separate' ? 28 : 36 * this.def.scale;
+    const length = this.def.layerMode === 'separate' ? 28 : 36 * this.visualScale;
     return new Phaser.Math.Vector2(
       this.x + Math.cos(this.turretAngle) * length,
       this.y + Math.sin(this.turretAngle) * length,
@@ -183,7 +223,7 @@ export class Tank extends Phaser.GameObjects.Container {
 
   private refreshHpBar() {
     const ratio = this.hp / this.def.maxHp;
-    this.hpFill.width = 48 * ratio;
+    this.hpFill.width = 52 * ratio;
     this.hpFill.fillColor = ratio > 0.45 ? (this.team === 'player' ? 0x4caf70 : 0xd35a3d) : 0xc4a35a;
   }
 
@@ -199,6 +239,7 @@ export class Tank extends Phaser.GameObjects.Container {
     this.turretSprite.setVisible(false);
     this.barrelSprite.setVisible(false);
     this.selectRing.setVisible(false);
+    this.hideRangeRing();
     this.ownerLabel.setVisible(false);
     this.hpBg.setVisible(false);
     this.hpFill.setVisible(false);
@@ -215,13 +256,12 @@ export class Tank extends Phaser.GameObjects.Container {
     if (this.def.layerMode === 'separate') {
       this.barrelSprite.setVisible(true);
       this.barrelSprite.setRotation(this.turretAngle - artOffset);
-      const inset = this.def.barrelInset * this.def.scale;
+      const inset = this.def.barrelInset * this.visualScale;
       this.barrelSprite.setPosition(
         -Math.cos(this.turretAngle) * inset,
         -Math.sin(this.turretAngle) * inset,
       );
     } else {
-      // layered: gun is baked into turret art
       this.barrelSprite.setVisible(false);
     }
   }

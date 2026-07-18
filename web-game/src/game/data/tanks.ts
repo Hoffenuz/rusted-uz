@@ -1,4 +1,4 @@
-/** Tank stats — display sizes normalized (~96px tall on screen). */
+/** Tank stats — barcha hull ~ bir xil ekran balandligi. */
 export type TankId =
   | 'tiger'
   | 't34'
@@ -27,7 +27,9 @@ export interface TankDef {
   fireCooldownMs: number;
   damage: number;
   projectileSpeed: number;
-  scale: number;
+  /** Native body texture size — runtime scale = TARGET_H / bodyH */
+  bodyW: number;
+  bodyH: number;
   bodyFacingOffset: number;
   layerMode: 'layered' | 'separate';
   barrelOriginY: number;
@@ -36,36 +38,38 @@ export interface TankDef {
   buildTimeMs: number;
 }
 
-/**
- * Target longest body edge on screen (px).
- * ~118 keeps Deux Vies 128px hulls near 1:1 (kamroq blur).
- */
-const TARGET_SIZE = 118;
-const scaleFromMax = (w: number, h: number) => TARGET_SIZE / Math.max(w, h);
+/** Bir xil vizual balandlik (px) — avvalgi holat. */
+export const TANK_TARGET_H = 72;
 
-/** Deux Vies: hull + turret (gun baked in). Do NOT stack barrel — duplicate art. */
+export function tankScale(texH: number): number {
+  return TANK_TARGET_H / Math.max(1, texH);
+}
+
 const dv = {
+  bodyW: 99,
+  bodyH: 128,
   bodyFacingOffset: -Math.PI / 2,
   layerMode: 'layered' as const,
   barrelOriginY: 0.5,
   barrelInset: 0,
-  scale: scaleFromMax(99, 128),
 };
 
 export const TANK_DEFS: Record<TankId, TankDef> = {
   tiger: {
     id: 'tiger',
     displayName: 'Tiger I',
-    maxHp: 700,
+    maxHp: 720,
     speed: 95,
     reverseSpeed: 55,
     turnSpeed: 1.6,
     turretTurnSpeed: 1.8,
+    // CN 虎式重型坦克.ini [attack] maxAttackRange:420
     attackRange: 420,
     fireCooldownMs: 900,
-    damage: 85,
+    damage: 88,
     projectileSpeed: 520,
-    scale: scaleFromMax(114, 364) * 0.92,
+    bodyW: 114,
+    bodyH: 364,
     bodyFacingOffset: -Math.PI / 2,
     layerMode: 'separate',
     barrelOriginY: 0.94,
@@ -76,91 +80,98 @@ export const TANK_DEFS: Record<TankId, TankDef> = {
   t34: {
     id: 't34',
     displayName: 'T-34',
-    maxHp: 420,
-    speed: 120,
-    reverseSpeed: 70,
-    turnSpeed: 2.0,
-    turretTurnSpeed: 2.2,
-    attackRange: 380,
-    fireCooldownMs: 700,
-    damage: 55,
+    maxHp: 380,
+    speed: 125,
+    reverseSpeed: 72,
+    turnSpeed: 2.1,
+    turretTurnSpeed: 2.3,
+    // CN T34中型坦克.ini maxAttackRange:400
+    attackRange: 400,
+    fireCooldownMs: 650,
+    damage: 52,
     projectileSpeed: 560,
-    // Chinese art visually bulkier — slightly smaller than DV hulls
-    scale: scaleFromMax(200, 320) * 0.82,
+    bodyW: 200,
+    bodyH: 320,
     bodyFacingOffset: -Math.PI / 2,
     layerMode: 'separate',
     barrelOriginY: 0.92,
     barrelInset: 14,
-    buildCost: 250,
-    buildTimeMs: 4000,
+    buildCost: 220,
+    buildTimeMs: 3800,
   },
   sherman: {
     id: 'sherman',
     displayName: 'Sherman',
-    maxHp: 480,
-    speed: 110,
-    reverseSpeed: 65,
-    turnSpeed: 1.8,
+    maxHp: 440,
+    speed: 112,
+    reverseSpeed: 66,
+    turnSpeed: 1.85,
     turretTurnSpeed: 2.0,
-    attackRange: 390,
-    fireCooldownMs: 750,
-    damage: 60,
+    // CN 谢尔曼中型坦克.ini maxAttackRange:385
+    attackRange: 385,
+    fireCooldownMs: 720,
+    damage: 58,
     projectileSpeed: 540,
-    scale: scaleFromMax(216, 445) * 0.88,
+    bodyW: 216,
+    bodyH: 445,
     bodyFacingOffset: -Math.PI / 2,
     layerMode: 'separate',
     barrelOriginY: 0.92,
     barrelInset: 14,
-    buildCost: 280,
-    buildTimeMs: 4500,
+    buildCost: 260,
+    buildTimeMs: 4200,
   },
   kv1: {
     id: 'kv1',
     displayName: 'KV-1',
-    maxHp: 620,
-    speed: 85,
-    reverseSpeed: 50,
-    turnSpeed: 1.4,
-    turretTurnSpeed: 1.5,
-    attackRange: 400,
-    fireCooldownMs: 850,
-    damage: 75,
+    maxHp: 680,
+    speed: 82,
+    reverseSpeed: 48,
+    turnSpeed: 1.35,
+    turretTurnSpeed: 1.45,
+    // CN KV1重型坦克.ini maxAttackRange:380
+    attackRange: 380,
+    fireCooldownMs: 880,
+    damage: 78,
     projectileSpeed: 500,
-    scale: scaleFromMax(152, 250) * 0.8,
+    bodyW: 152,
+    bodyH: 250,
     bodyFacingOffset: -Math.PI / 2,
     layerMode: 'separate',
     barrelOriginY: 0.92,
     barrelInset: 16,
-    buildCost: 380,
-    buildTimeMs: 5500,
+    buildCost: 360,
+    buildTimeMs: 5200,
   },
   tiger_b: {
     id: 'tiger_b',
     displayName: 'Tiger II',
-    maxHp: 780,
-    speed: 90,
-    reverseSpeed: 50,
-    turnSpeed: 1.5,
-    turretTurnSpeed: 1.7,
-    attackRange: 440,
-    fireCooldownMs: 950,
-    damage: 95,
+    maxHp: 820,
+    speed: 88,
+    reverseSpeed: 48,
+    turnSpeed: 1.45,
+    turretTurnSpeed: 1.65,
+    // DV Tiger Ausf B / Tiger.ini maxAttackRange:500
+    attackRange: 500,
+    fireCooldownMs: 980,
+    damage: 100,
     projectileSpeed: 540,
     ...dv,
-    buildCost: 500,
-    buildTimeMs: 6500,
+    buildCost: 520,
+    buildTimeMs: 6800,
   },
   panther: {
     id: 'panther',
     displayName: 'Panther',
     maxHp: 560,
-    speed: 115,
-    reverseSpeed: 65,
-    turnSpeed: 1.9,
-    turretTurnSpeed: 2.1,
-    attackRange: 410,
-    fireCooldownMs: 800,
-    damage: 72,
+    speed: 118,
+    reverseSpeed: 66,
+    turnSpeed: 1.95,
+    turretTurnSpeed: 2.15,
+    // DV Panther.ini maxAttackRange:500
+    attackRange: 500,
+    fireCooldownMs: 780,
+    damage: 74,
     projectileSpeed: 560,
     ...dv,
     buildCost: 360,
@@ -170,45 +181,48 @@ export const TANK_DEFS: Record<TankId, TankDef> = {
     id: 'panzer4',
     displayName: 'Panzer IV',
     maxHp: 400,
-    speed: 110,
-    reverseSpeed: 65,
-    turnSpeed: 1.9,
-    turretTurnSpeed: 2.0,
-    attackRange: 380,
-    fireCooldownMs: 750,
-    damage: 58,
+    speed: 112,
+    reverseSpeed: 66,
+    turnSpeed: 1.95,
+    turretTurnSpeed: 2.05,
+    // DV panzer IV.ini maxAttackRange:500
+    attackRange: 500,
+    fireCooldownMs: 700,
+    damage: 56,
     projectileSpeed: 540,
     ...dv,
-    buildCost: 260,
-    buildTimeMs: 4200,
+    buildCost: 240,
+    buildTimeMs: 4000,
   },
   is2: {
     id: 'is2',
     displayName: 'IS-2',
-    maxHp: 720,
-    speed: 88,
-    reverseSpeed: 50,
-    turnSpeed: 1.4,
-    turretTurnSpeed: 1.6,
-    attackRange: 430,
-    fireCooldownMs: 900,
-    damage: 90,
+    maxHp: 760,
+    speed: 86,
+    reverseSpeed: 48,
+    turnSpeed: 1.35,
+    turretTurnSpeed: 1.55,
+    // DV is2.ini maxAttackRange:500
+    attackRange: 500,
+    fireCooldownMs: 920,
+    damage: 96,
     projectileSpeed: 520,
     ...dv,
-    buildCost: 420,
-    buildTimeMs: 5800,
+    buildCost: 440,
+    buildTimeMs: 6000,
   },
   pershing: {
     id: 'pershing',
     displayName: 'M26 Pershing',
-    maxHp: 600,
+    maxHp: 620,
     speed: 105,
     reverseSpeed: 60,
     turnSpeed: 1.7,
     turretTurnSpeed: 1.9,
-    attackRange: 400,
+    // DV pershing.ini maxAttackRange:500
+    attackRange: 500,
     fireCooldownMs: 820,
-    damage: 78,
+    damage: 80,
     projectileSpeed: 550,
     ...dv,
     buildCost: 390,
@@ -217,18 +231,19 @@ export const TANK_DEFS: Record<TankId, TankDef> = {
   m4: {
     id: 'm4',
     displayName: 'M4A3 (76)',
-    maxHp: 460,
-    speed: 118,
-    reverseSpeed: 68,
-    turnSpeed: 1.9,
-    turretTurnSpeed: 2.1,
-    attackRange: 385,
-    fireCooldownMs: 720,
-    damage: 62,
+    maxHp: 450,
+    speed: 120,
+    reverseSpeed: 70,
+    turnSpeed: 1.95,
+    turretTurnSpeed: 2.15,
+    // DV Sherman.ini (m4a3) maxAttackRange:500
+    attackRange: 500,
+    fireCooldownMs: 700,
+    damage: 60,
     projectileSpeed: 560,
     ...dv,
-    buildCost: 290,
-    buildTimeMs: 4500,
+    buildCost: 270,
+    buildTimeMs: 4300,
   },
 };
 

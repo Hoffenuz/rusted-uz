@@ -19,24 +19,23 @@ function renderResolution() {
 }
 
 export function createGameConfig(parent: string): Phaser.Types.Core.GameConfig {
-  // resolution: retina/FIT buffer (types ba’zan yo‘q deb ko‘rsatadi)
+  // PNG pixel-perfect: NEAREST + roundPixels (yumshoq LINEAR blur yo‘q)
   const config = {
     type: Phaser.AUTO,
     parent,
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     backgroundColor: '#0a100e',
-    // Painted tank art: LINEAR + AA. pixelArt/NEAREST aylanganda “bijirlash” berardi.
-    pixelArt: false,
-    antialias: true,
-    roundPixels: false,
+    pixelArt: true,
+    antialias: false,
+    roundPixels: true,
     resolution: renderResolution(),
     render: {
-      antialias: true,
-      roundPixels: false,
-      pixelArt: false,
+      antialias: false,
+      roundPixels: true,
+      pixelArt: true,
       powerPreference: 'high-performance' as const,
-      mipmapFilter: 'LINEAR' as const,
+      mipmapFilter: 'NEAREST' as const,
     },
     physics: {
       default: 'arcade' as const,

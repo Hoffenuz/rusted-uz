@@ -2,7 +2,9 @@ import Phaser from 'phaser';
 import {
   BATTLE_INFO,
   DEFAULT_SESSION,
+  DIFFICULTY_INFO,
   type BattleId,
+  type DifficultyId,
   type PlatformMode,
   type SessionConfig,
 } from '../data/session';
@@ -71,23 +73,28 @@ export class MainMenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.selected.platform = this.row(210, 'Qurilma', [
+    this.selected.platform = this.row(188, 'Qurilma', [
       { label: 'PC', value: 'pc', kind: 'platform' },
       { label: 'Mobile', value: 'mobile', kind: 'platform' },
     ]);
-    this.selected.faction = this.row(290, 'Jamoa', [
+    this.selected.faction = this.row(252, 'Jamoa', [
       { label: 'Axis', value: 'axis', kind: 'faction' },
       { label: 'Allies', value: 'allies', kind: 'faction' },
     ]);
-    this.selected.battle = this.row(370, 'Jang', [
+    this.selected.battle = this.row(316, 'Jang', [
       { label: 'Skirmish', value: 'skirmish', kind: 'battle' },
       { label: 'Hujum', value: 'assault', kind: 'battle' },
     ]);
+    this.selected.difficulty = this.row(380, 'Dushman', [
+      { label: 'Oson', value: 'easy', kind: 'difficulty' },
+      { label: 'Oddiy', value: 'normal', kind: 'difficulty' },
+      { label: 'Qiyin', value: 'hard', kind: 'difficulty' },
+    ]);
 
     this.summary = this.add
-      .text(GAME_WIDTH / 2, 440, '', {
+      .text(GAME_WIDTH / 2, 448, '', {
         fontFamily: 'Segoe UI',
-        fontSize: '15px',
+        fontSize: '14px',
         color: '#c4a35a',
         align: 'center',
         wordWrap: { width: 900 },
@@ -111,7 +118,7 @@ export class MainMenuScene extends Phaser.Scene {
     start.on('pointerdown', () => this.startGame());
 
     const exit = this.add
-      .text(GAME_WIDTH / 2, 600, 'Chiqish', {
+      .text(GAME_WIDTH / 2, 590, 'Chiqish', {
         fontFamily: 'Segoe UI',
         fontSize: '16px',
         color: '#e8b2a4',
@@ -133,7 +140,7 @@ export class MainMenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(GAME_WIDTH / 2, 660, 'Kredit yig‘ing · zavoddan tank · dushman bazasini yo‘q qiling', {
+      .text(GAME_WIDTH / 2, 640, 'Kredit · pastki ishlab chiqarish · dushman bazasini yo‘q qiling', {
         fontFamily: 'Segoe UI',
         fontSize: '13px',
         color: '#7a8a78',
@@ -147,26 +154,32 @@ export class MainMenuScene extends Phaser.Scene {
   private row(
     y: number,
     title: string,
-    opts: { label: string; value: string; kind: 'platform' | 'faction' | 'battle' }[],
+    opts: {
+      label: string;
+      value: string;
+      kind: 'platform' | 'faction' | 'battle' | 'difficulty';
+    }[],
   ) {
     this.add
-      .text(GAME_WIDTH / 2 - 280, y, title, {
+      .text(GAME_WIDTH / 2 - 300, y, title, {
         fontFamily: 'Segoe UI',
-        fontSize: '18px',
+        fontSize: '16px',
         color: '#d7e6d4',
       })
       .setOrigin(0, 0.5);
 
     const texts: Phaser.GameObjects.Text[] = [];
+    const step = opts.length >= 3 ? 130 : 170;
+    const startX = GAME_WIDTH / 2 - ((opts.length - 1) * step) / 2 + 40;
     opts.forEach((o, i) => {
-      const x = GAME_WIDTH / 2 - 40 + i * 180;
+      const x = startX + i * step;
       const t = this.add
         .text(x, y, o.label, {
           fontFamily: 'Segoe UI',
-          fontSize: '18px',
+          fontSize: '16px',
           color: '#d7e6d4',
           backgroundColor: '#1a2a20',
-          padding: { x: 22, y: 14 },
+          padding: { x: 16, y: 12 },
         })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
@@ -181,6 +194,7 @@ export class MainMenuScene extends Phaser.Scene {
         }
         if (o.kind === 'faction') this.session.faction = o.value as FactionId;
         if (o.kind === 'battle') this.session.battle = o.value as BattleId;
+        if (o.kind === 'difficulty') this.session.difficulty = o.value as DifficultyId;
         this.refreshSummary();
         this.refreshHighlights();
         this.sound.play('sfx-select', { volume: 0.25 });
@@ -203,13 +217,17 @@ export class MainMenuScene extends Phaser.Scene {
     mark(this.selected.platform, this.session.platform);
     mark(this.selected.faction, this.session.faction);
     mark(this.selected.battle, this.session.battle);
+    mark(this.selected.difficulty, this.session.difficulty);
   }
 
   private refreshSummary() {
     const battle = BATTLE_INFO[this.session.battle];
+    const diff = DIFFICULTY_INFO[this.session.difficulty];
     const plat = this.session.platform === 'pc' ? 'PC' : 'Mobile';
     const fac = this.session.faction === 'axis' ? 'Axis (Germaniya)' : 'Allies (AQSH)';
-    this.summary.setText(`${plat} · ${fac} · ${battle.title} — ${battle.desc}`);
+    this.summary.setText(
+      `${plat} · ${fac} · ${battle.title} · ${diff.title}\n${diff.desc}`,
+    );
   }
 
   private startGame() {
