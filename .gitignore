@@ -1,0 +1,39 @@
+# =============================================================================
+# Manba / reference (o‘yin ishlashi uchun kerak emas — faqat lokal)
+# =============================================================================
+
+# Original mod archives
+*.rwmod
+VirtualJoystickPack.zip
+
+# Extracted / reference packs
+rwmod_extracted_copy/
+deux_vies_extracted/
+joystick/
+
+# Full Rusted Warfare game install (hundreds of MB)
+Rusted Warfare RTS v1.15p11b/
+
+# =============================================================================
+# web-game build / deps
+# =============================================================================
+web-game/node_modules/
+web-game/dist/
+web-game/.vite/
+web-game/*.local
+
+# =============================================================================
+# OS / editor
+# =============================================================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+.idea/
+.vscode/
+*.swp
+*~
+
+# Cursor / local agent
+.cursor/
+agent-transcripts/
